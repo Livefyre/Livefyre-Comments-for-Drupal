@@ -1,0 +1,299 @@
+<?php
+
+/*
+* Livefyre Drupal Plugin
+*/
+
+/*
+ * Include the Livefyre API
+ */
+include_once 'livefyre-api/libs/php/Livefyre.php';
+
+/*
+ * Include the Livefyre Global
+ */
+// echo "<script>var LivefyreDrupal = new Array();</script>";
+
+/**
+ * Display help and module information
+ * @param path which path of the site we're displaying help
+ * @param arg array that holds the current path as would be returned from arg() function
+ * @return help text for the path
+ */
+function livefyre_help($path, $arg) {
+    switch ($path) {
+        case "admin/help#livefyre":
+            return '<p>' . t("Implements Livefyre Comments 3") . '</p>';
+            break;
+    }
+}
+
+/**
+ * Display Livefyre Configuration Menu
+ * @return items to be displayed. Stored in another file 'livefyre-settings.inc'
+ */
+function livefyre_menu() {
+
+    // Add globals here
+
+    $items = array();
+
+    $items['admin/config/content/livefyre'] = array(
+        'title' => 'Livefyre Comments 3',
+        'description' => 'Livefyre Comments 3 Plugin for Drupal',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('livefyre_admin'),
+        'access arguments' => array('administer livefyre settings'),
+        'file' => 'livefyre-settings.inc',
+        'type' => MENU_NORMAL_ITEM,
+    );
+
+    return $items;
+}
+
+/**
+ * Display Livefyre Block Information
+ * @return the block added to Drupal's information
+ */
+function livefyre_block_info() {
+    
+    $blocks['livefyre'] = array(
+        'info' => t('Livefyre'), //The name that will appear in the block list.
+        'cache' => DRUPAL_CACHE_PER_ROLE, //Default
+    );
+    return $blocks;
+}
+
+/**
+ * Display Livefyre Block Configuration Menu
+ * @param delta which block is being displayed
+ * @return items to be displayed. Stored in another file 'livefyre-settings.inc'
+ */
+function livefyre_block_configure($delta = '') {
+
+    $form = array();
+    
+    if ($delta == 'livefyre') {
+        $form['livefyre_block_article_id'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Livefyre Block Article ID'),
+            '#default_value' => variable_get('livefyre_block_article_id', 'block'),
+            '#description' => t("The Livefyre Article ID used by the block implementation of Livefyre."),
+        );
+    }
+    return $form;
+}
+
+/**
+ * Display Livefyre Configuration Menu
+ * @return items to be displayed. Stored in another file 'livefyre-settings.inc'
+ */
+function livefyre_block_save($delta = '', $edit = array()) {
+    
+    if ($delta == 'livefyre') {
+        variable_set('livefyre_block_article_id', $edit['livefyre_block_article_id']);
+    }
+}
+
+function livefyre_block_view($delta = '') {
+
+    echo "<p>Livefyre Block</p>";
+
+    if ($delta == 'livefyre') {
+        // This example is adapted from node.module.
+        $block = array();
+
+        // Define Livefyre variables
+        global $base_url;
+        $lf_network = variable_get('livefyre_network', 'livefyre.com');
+        $lf_site_id = variable_get('livefyre_site_id');
+        $lf_source_url = $base_url . '/' . current_path();
+        $livefyre_zor = "http://zor.livefyre.com/wjs/v3.0/javascripts/livefyre.js";
+        $lf_site_key = variable_get('livefyre_site_key');
+        $lf_auth_delegate = variable_get('livefyre_auth_delegate', '');
+        $lf_config = variable_get('livefyre_app_config', '');
+        $lf_callback = variable_get('livefyre_conv_load_callback', '');
+        $lf_custom_css = variable_get('livefyre_custom_css', '');
+        $lf_article_id = variable_get('livefyre_block_article_id', 'block');
+
+        // Define Livefyre API variables
+        $domain = new Livefyre_Domain($lf_network);
+        $site = $domain->site($lf_site_id, $key = $lf_site_key);
+        $article = $site->article($lf_article_id, $lf_source_url, 'Drupal Block');
+        $conv = $article->conversation();
+
+        // Turn json config string into an associative array to add to and call to_init_v3
+        $lf_config = json_decode($lf_config, $assoc = TRUE);
+
+        // Add auth delegates to the config
+        if ($lf_auth_delegate != '') {
+            $lf_config['delegate'] = $lf_auth_delegate;
+        }
+
+        // Add the callback function if there is one. Goes in config['onload']
+        if ($lf_callback != '') {
+            $lf_config['onload'] = $lf_callback;
+        }
+
+        // Add custom CSS inline
+        if ($lf_custom_css != '') {
+            drupal_add_css($lf_custom_css, $option['type'] = 'inline');
+        }
+
+        // Add the livefyre div to the block
+        $livefyre_div = "<div id='livefyre-block'></div>";
+
+        $block['content'] = $livefyre_div;
+
+        // Grab the JS from the Conv API and cleanse it of it's tags due to Drupal function already
+        // adding them.
+        $output = $conv->to_initjs_v3('livefyre-block', $config = $lf_config);
+        $cleansed_tags = str_replace('<script type="text/javascript">', "", $output);
+        $cleansed_tags = str_replace('</script>', "", $cleansed_tags);
+
+        drupal_add_js('' . $cleansed_tags,
+            array(
+                'type' => 'inline',
+                'scope' => 'footer',
+            )
+        );
+
+        $global_push = 'if (typeof LivefyreDrupal == \'undefined\') {var LivefyreDrupal = new Array();}
+            LivefyreDrupal.push(' . json_encode($lf_config) . ');';
+
+        // Add a LivefyreDrupal Global
+        drupal_add_js('' . $global_push,
+            array(
+                'type' => 'inline',
+                'scope' => 'footer',
+            )
+        );
+
+        // Add the external javascript to the page
+        drupal_add_js($livefyre_zor,
+            array(
+                'type' => 'external',
+                'scope' => 'header',
+            )
+        );
+
+        return $block;
+    }
+}
+
+function livefyre_node_view($node, $view_mode = 'full') {
+
+    echo "<p>Livefyre Node</p>";
+
+    $livefyre_nodes = variable_get('livefyre_node_types');
+    /* 
+    * Decide what to output based on the current view.
+    * Full: Display the widget
+    * Teaser: Display the comment count
+    */
+    if ($view_mode == 'full'
+        && in_array($node->type, $livefyre_nodes)
+        && $livefyre_nodes[$node->type] != '0') {
+        
+        // Define Livefyre variables
+        global $base_url;
+        $lf_network = variable_get('livefyre_network', 'livefyre.com');
+        $lf_site_id = variable_get('livefyre_site_id');
+        $lf_source_url = $base_url . '/' . current_path();
+        $livefyre_zor = "http://zor.livefyre.com/wjs/v3.0/javascripts/livefyre.js";
+        $lf_site_key = variable_get('livefyre_site_key');
+        $lf_auth_delegate = variable_get('livefyre_auth_delegate', '');
+        $lf_config = variable_get('livefyre_app_config', '');
+        $lf_callback = variable_get('livefyre_conv_load_callback', '');
+        $lf_custom_css = variable_get('livefyre_custom_css', '');
+
+        // Define Livefyre API variables
+        $domain = new Livefyre_Domain($lf_network);
+        $site = $domain->site($lf_site_id, $key = $lf_site_key);
+        $article = $site->article($node->nid, $lf_source_url, $node->title);
+        $conv = $article->conversation();
+
+        // Turn json config string into an associative array to add to and call to_init_v3
+        $lf_config = json_decode($lf_config, $assoc = TRUE);
+
+        // Add auth delegates to the config
+        if ($lf_auth_delegate != '') {
+            $lf_config['delegate'] = $lf_auth_delegate;
+        }
+
+        // Add the callback function if there is one. Goes in config['onload']
+        if ($lf_callback != '') {
+            $lf_config['onload'] = $lf_callback;
+        }
+
+        // Add custom CSS inline
+        if ($lf_custom_css != '') {
+            drupal_add_css($lf_custom_css, $option['type'] = 'inline');
+        }
+
+        // Add the livefyre div to the page
+        $livefyre_div = "<div id='livefyre'></div>";
+        $node->content['livefyre'] = 
+            array(
+                '#markup' => $livefyre_div,
+            );
+
+        // Grab the JS from the Conv API and cleanse it of it's tags due to Drupal function already
+        // adding them.
+        $output = $conv->to_initjs_v3('livefyre', $config = $lf_config);
+        $cleansed_tags = str_replace('<script type="text/javascript">', "", $output);
+        $cleansed_tags = str_replace('</script>', "", $cleansed_tags);
+
+        drupal_add_js('' . $cleansed_tags,
+            array(
+                'type' => 'inline',
+                'scope' => 'footer',
+            )
+        );
+
+        $global_push = 'if (typeof LivefyreDrupal == \'undefined\') {var LivefyreDrupal = new Array();}
+            LivefyreDrupal.push(' . json_encode($lf_config) . ');';
+
+        // Add a LivefyreDrupal Global
+        drupal_add_js('' . $global_push,
+            array(
+                'type' => 'inline',
+                'scope' => 'footer',
+            )
+        );
+
+        // Add the external javascript to the page
+        drupal_add_js($livefyre_zor,
+            array(
+                'type' => 'external',
+                'scope' => 'header',
+            )
+        );
+
+    }
+    else if ($view_mode == 'teaser') {
+        echo '<script type="text/javascript" data-lf-domain="livefyre.com" id="ncomments_js" src="http://zor.livefyre.com/wjs/v1.0/javascripts/CommentCount.js"></script>';
+        echo "<p>This is a teaser.</p>";
+    }
+}
+
+
+
+
+/* Excecution testing:
+ *
+ */
+
+function livefyre_init() {
+    echo "<p>Livefyre Init!</p>";
+}
+
+
+function livefyre_boot() {
+    echo "<p>Livefyre Boot!</p>";
+}
+
+function livefyre_footer() {
+    echo "<p>Livefyre Footer!</p>";
+}
+

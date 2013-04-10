@@ -1,7 +1,8 @@
 #!/bin/bash
 
+rm livefyre-drupal.tar.gz
 cd livefyre
-tar cvzf livefyre-drupal.tar.gz livefyre* js README.txt
+tar --exclude='.git/' -zcvf livefyre-drupal.tar.gz livefyre*
 mv livefyre-drupal.tar.gz ..
 cd ..
 
