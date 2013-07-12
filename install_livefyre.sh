@@ -1,17 +1,28 @@
 #!/bin/bash
 
 if [[ -z $1 ]]; then
-    echo "usage: $0 BLOGNAME"
-    echo "   eg: $0 drupaltest"
+    echo "usage: $0 BLOGNAME TYPE"
+    echo "   eg: $0 drupaltest (community or enterprise)"
+    exit 1
+fi
+
+if [[ -z $2 ]]; then
+    echo "usage: $0 BLOGNAME TYPE"
+    echo "   eg: $0 drupaltest (community or enterprise)"
     exit 1
 fi
 
 BLOGNAME=$1 
+if [[ $2 = 'enterprise' ]]; then
+    PLUGINNAME='livefyre-enterprise-drupal.tar.gz'
+else
+    PLUGINNAME='livefyre-drupal.tar.gz'
+fi
 
-./build.sh
+./build.sh $2
 
-scp livefyre-drupal.tar.gz root@orangesaregreat.com:/var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules
+scp $PLUGINNAME root@orangesaregreat.com:/var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules
 
 sleep 1
 
-ssh root@orangesaregreat.com "cd /var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules; tar xvfz livefyre-drupal.tar.gz; rm livefyre-drupal.tar.gz"
+ssh root@orangesaregreat.com "cd /var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules; tar xvfz $PLUGINNAME; rm $PLUGINNAME"
