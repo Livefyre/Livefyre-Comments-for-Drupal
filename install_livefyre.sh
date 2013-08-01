@@ -14,9 +14,9 @@ fi
 
 BLOGNAME=$1 
 if [[ $2 = 'enterprise' ]]; then
-    PLUGINNAME='livefyre-enterprise-drupal.tar.gz'
+    PLUGINNAME='livefyre-enterprise-drupal.zip'
 else
-    PLUGINNAME='livefyre-drupal.tar.gz'
+    PLUGINNAME='livefyre-drupal.zip'
 fi
 
 ./build.sh $2
@@ -25,4 +25,4 @@ scp $PLUGINNAME root@orangesaregreat.com:/var/www/orangesaregreat.com/$BLOGNAME/
 
 sleep 1
 
-ssh root@orangesaregreat.com "cd /var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules; tar xvfz $PLUGINNAME; rm $PLUGINNAME"
+ssh root@orangesaregreat.com "cd /var/www/orangesaregreat.com/$BLOGNAME/sites/all/modules; unzip $PLUGINNAME; rm $PLUGINNAME"
