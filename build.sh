@@ -15,29 +15,26 @@ function sed_i () {
     fi
 }
 
-cd livefyre
+PATHROOT=$( cd $(dirname $0) ; pwd -P )
+mkdir "$PATHROOT/temp_build"
+cp -r "$PATHROOT/livefyre" "$PATHROOT/temp_build/"
+TEMPPATH="$PATHROOT/temp_build"
+SRCPATH="$TEMPPATH/livefyre-comments/src"
+
 if [[ $1 = 'enterprise' ]]; then
-    PLUGINNAME='livefyre-enterprise-drupal.tar.gz'
+    PLUGINNAME='livefyre-enterprise-drupal.zip'
     echo "Making an Enterprise Drupal Plugin!"
     sed_i '/\/\/ Enterprise Hook/a\
-        \        include "livefyre-enterprise-code.inc";' livefyre.module
+        \        include "livefyre-enterprise-code.inc";' "$TEMPPATH/livefyre/livefyre.module"
     sed_i '/\/\/ Enterprise Hook/a\
-        \    include "livefyre-enterprise-settings.inc";' livefyre.admin.inc
+        \    include "livefyre-enterprise-settings.inc";' "$TEMPPATH/livefyre/livefyre.admin.inc"
 else
     echo "Making a Community Drupal Plugin!"
-    PLUGINNAME='livefyre-drupal.tar.gz'
+    PLUGINNAME='livefyre-drupal.zip'
 fi
 rm $PLUGINNAME
-tar --exclude='.git/' --exclude='settings-toggle.js' -zcvf $PLUGINNAME livefyre*
-mv $PLUGINNAME ..
-if [[ $1 = 'enterprise' ]]; then
-    echo "Reverting Enterprise Changes!"
-    sed_i 's/        include "livefyre-enterprise-code.inc";//g' livefyre.module
-    sed_i 's/    include "livefyre-enterprise-settings.inc";//g' livefyre.admin.inc
-else
-    echo "No enterprise reverting necessary!"
-fi
-cd ..
+zip -r $PLUGINNAME livefyre -x ".git/" -x "/livefyre/livefyre-api/.git/*" -x "settings-toggle.js"
+rm -rf $TEMPPATH
 
 echo "
 *Made a new zip file for you: $PLUGINNAME"
