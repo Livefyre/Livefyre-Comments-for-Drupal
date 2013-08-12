@@ -19,11 +19,12 @@ PATHROOT=$( cd $(dirname $0) ; pwd -P )
 mkdir "$PATHROOT/temp_build"
 cp -r "$PATHROOT/livefyre" "$PATHROOT/temp_build/"
 TEMPPATH="$PATHROOT/temp_build"
-SRCPATH="$TEMPPATH/livefyre-comments/src"
 
 if [[ $1 = 'enterprise' ]]; then
     PLUGINNAME='livefyre-enterprise-drupal.zip'
     echo "Making an Enterprise Drupal Plugin!"
+    echo "$TEMPPATH/livefyre/livefyre.module"
+    echo "$TEMPPATH/livefyre/livefyre.admin.inc"
     sed_i '/\/\/ Enterprise Hook/a\
         \        include "livefyre-enterprise-code.inc";' "$TEMPPATH/livefyre/livefyre.module"
     sed_i '/\/\/ Enterprise Hook/a\
@@ -33,7 +34,11 @@ else
     PLUGINNAME='livefyre-drupal.zip'
 fi
 rm $PLUGINNAME
-zip -r $PLUGINNAME livefyre -x ".git/" -x "/livefyre/livefyre-api/.git/*" -x "settings-toggle.js"
+
+pushd temp_build
+zip -r $PLUGINNAME livefyre -x ".git/" -x "/livefyre/livefyre-api/.git/*" -x "/settings-toggle.js"
+mv $PLUGINNAME $PATHROOT
+popd
 rm -rf $TEMPPATH
 
 echo "
