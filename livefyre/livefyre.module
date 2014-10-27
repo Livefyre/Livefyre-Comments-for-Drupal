@@ -272,7 +272,7 @@ function livefyre_page_setup( $global_push ) {
   $livefyre_zor = LF_ZOR;
   $lf_network = variable_get('livefyre_network', 'livefyre.com');
   if(variable_get('livefyre_environment') != 1) {
-    $livefyre_zor = "http://zor." . $lf_network . "/wjs/v3.0/javascripts/livefyre.js";
+    $livefyre_zor = "http://zor.t402.livefyre.com/wjs/v3.0/javascripts/livefyre.js";
   }
 
   // Add a LivefyreDrupal Global
