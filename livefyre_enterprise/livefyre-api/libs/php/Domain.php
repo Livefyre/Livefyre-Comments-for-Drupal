@@ -133,7 +133,13 @@ class Livefyre_Domain {
     }
     
     public function source_js_v3() {
-        return '<script type="text/javascript" src="http://zor.' . $this->get_livefyre_tld() . '/wjs/v3.0/javascripts/livefyre.js"></script>';
+        if( !empty( $_SERVER['https'] ) ) {
+            // Load legacy fyre.conv.load over SSL
+            return '<script type="text/javascript" src="https://cdn.livefyre.com/libs/fyre.conv.load.js"></script>';
+        } else {
+            // Load legacy fyre.conv.load over HTTP
+            return '<script type="text/javascript" src="http://zor.' . $this->get_livefyre_tld() . '/wjs/v3.0/javascripts/livefyre.js"></script>';
+        }
     }
     
     public function authenticate_js( $token_url = '', $cookie_path = '/', $token_cookie = null, $dname_cookie = null  ) {
