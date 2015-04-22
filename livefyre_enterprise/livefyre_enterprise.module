@@ -7,7 +7,7 @@
 /**
  * Define the zor library Livefyre will pull down from.
  */
-define('LF_ZOR', 'http://zor.livefyre.com/wjs/v3.0/javascripts/livefyre.js');
+define('LF_ZOR', '//cdn.livefyre.com/libs/fyre.conv.load.js');
 
 /**
  * Include the Livefyre API
@@ -442,7 +442,8 @@ function livefyre_enterprise_page_setup() {
   // Build the Livefyre zor URL
   $livefyre_zor = LF_ZOR;
   $lf_network = variable_get('livefyre_enterprise_network', 'livefyre.com');
-  if (variable_get('livefyre_enterprise_environment') != 1) {
+  if ( (variable_get('livefyre_enterprise_environment') != 1) && 
+       (empty( $_SERVER['https'])) ) {
     $livefyre_zor = "http://zor." . $lf_network . "/wjs/v3.0/javascripts/livefyre.js";
   }
 
